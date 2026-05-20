@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAS Genap Prakarya 7 - SMPN 38 Bandar Lampung</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Mencegah siswa menyeleksi atau menyalin teks */
+        .no-select {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        /* Sembunyikan scrollbar untuk tampilan grid nomor soal yang lebih rapi */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 no-select">
+
+    <!-- MODAL PERINGATAN (Pengganti Alert) -->
+    <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center border-t-4 border-red-600">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2" id="modal-title">Peringatan!</h3>
+            <p class="text-sm text-gray-600 mb-6" id="modal-message">Pesan peringatan.</p>
+            <button onclick="closeModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition">Mengerti</button>
+        </div>
+    </div>
+
+    <!-- MODAL KONFIRMASI SUBMIT -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[110] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center border-t-4 border-blue-600">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">Konfirmasi Submit</h3>
+            <p class="text-sm text-gray-600 mb-6" id="confirm-message">Apakah Anda yakin sudah selesai?</p>
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2.5 px-4 rounded-lg transition text-sm">Batal</button>
+                <button onclick="executeSubmit()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-4 rounded-lg transition text-sm">Ya, Kumpulkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LAYAR 1: LOGIN / FORM INPUT -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md border-t-4 border-blue-600">
+            <div class="text-center mb-6">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Tut_Wuri_Handayani.png" alt="Logo" class="h-16 mx-auto mb-3 opacity-90">
+                <h1 class="text-xl font-bold text-gray-900 leading-tight">SUMATIF AKHIR SEMESTER GENAP</h1>
+                <h2 class="text-md font-semibold text-blue-600 mt-1">SMPN 38 BANDAR LAMPUNG</h2>
+                <p class="text-xs text-gray-500 mt-2 bg-gray-100 py-1 rounded-full">Mata Pelajaran: Prakarya | Kelas 7</p>
+            </div>
+            
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-6 rounded text-xs text-yellow-800">
+                <strong>Aturan Ujian:</strong><br>
+                1. Waktu pengerjaan 90 menit.<br>
+                2. Dilarang keluar aplikasi atau mengganti tab/layar.<br>
+                3. Peringatan maksimal 2x, pelanggaran ke-3 otomatis tersubmit.
+            </div>
+
+            <form id="login-form" onsubmit="startExam(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-1 text-gray-700">Nama Lengkap Siswa</label>
+                    <input type="text" id="student-name" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm uppercase">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold mb-1 text-gray-700">Kelas</label>
+                    <select id="student-class" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                        <option value="">-- Pilih Kelas --</option>
+                        <option value="7 E">7 E</option>
+                        <option value="7 F">7 F</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-lg transition duration-200 shadow-md">
+                    Mulai Ujian
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- LAYAR 2: INTERFACE UJIAN -->
+    <div id="exam-screen" class="hidden h-screen flex flex-col bg-gray-50">
+        <!-- Header -->
+        <header class="bg-white shadow-sm px-4 py-3 shrink-0 flex justify-between items-center z-10">
+            <div>
+                <p id="display-name" class="font-bold text-sm text-gray-800"></p>
+                <p id="display-class" class="text-xs text-blue-600 font-semibold"></p>
+            </div>
+            <div class="text-right flex flex-col items-end">
+                <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Sisa Waktu</span>
+                <div class="bg-red-50 px-3 py-1 rounded-md border border-red-100 text-red-600 font-mono font-bold text-base shadow-inner">
+                    <span id="timer">90:00</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-hidden flex flex-col md:flex-row max-w-6xl w-full mx-auto relative">
+            
+            <!-- Left/Top: Navigasi Nomor Soal -->
+            <div class="bg-white md:w-64 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col shrink-0 h-40 md:h-full transition-all duration-300 z-20" id="nav-panel">
+                <div class="p-3 bg-gray-50 border-b flex justify-between items-center">
+                    <h3 class="font-bold text-xs text-gray-700 uppercase tracking-wider">Daftar Soal</h3>
+                    <span id="warning-badge" class="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded hidden">Pelanggaran: <span id="warn-count">0</span>/2</span>
+                </div>
+                <div id="nav-grid" class="flex-1 overflow-y-auto p-3 grid grid-cols-5 md:grid-cols-4 gap-2 content-start no-scrollbar">
+                    <!-- Tombol Nomor Soal di-generate via JS -->
+                </div>
+            </div>
+
+            <!-- Right/Bottom: Area Soal -->
+            <div class="flex-1 flex flex-col h-full overflow-hidden bg-gray-50 relative">
+                <div class="flex-1 overflow-y-auto p-4 pb-24">
+                    <div class="bg-white p-5 md:p-8 rounded-2xl shadow-sm border border-gray-100 max-w-3xl mx-auto">
+                        <div class="flex items-center gap-3 mb-6 border-b pb-4">
+                            <span class="bg-blue-600 text-white text-sm font-bold w-10 h-10 flex items-center justify-center rounded-lg shadow-sm" id="current-number">1</span>
+                            <span class="text-xs font-semibold text-gray-400">Pilih salah satu jawaban yang paling tepat!</span>
+                        </div>
+                        
+                        <p id="question-text" class="text-base md:text-lg font-medium mb-6 text-gray-800 leading-relaxed"></p>
+                        
+                        <div id="options-container" class="space-y-3">
+                            <!-- Opsi Jawaban di-generate via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer / Navigasi Bawah -->
+                <footer class="absolute bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 p-3 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                    <button id="btn-prev" onclick="changeQuestion(-1)" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition">
+                        &larr; <span class="hidden sm:inline">Sebelumnya</span>
+                    </button>
+                    
+                    <button id="btn-submit" onclick="confirmSubmit()" class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition shadow-lg hidden">
+                        Submit Ujian
+                    </button>
+                    
+                    <button id="btn-next" onclick="changeQuestion(1)" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition shadow-md">
+                        <span class="hidden sm:inline">Selanjutnya</span> &rarr;
+                    </button>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- LAYAR 3: HASIL & PEMBAHASAN -->
+    <div id="result-screen" class="hidden min-h-screen bg-gray-100 p-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Skor Header -->
+            <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden mb-8">
+                <div class="bg-blue-600 p-6 text-center text-white">
+                    <h2 class="text-2xl font-black mb-1">Ujian Selesai!</h2>
+                    <p class="text-blue-100 text-sm">Data jawaban Anda telah berhasil direkam.</p>
+                </div>
+                <div class="p-6">
+                    <div class="flex flex-wrap justify-center gap-4 text-center">
+                        <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 w-32">
+                            <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Benar</p>
+                            <p id="res-benar" class="text-3xl font-black text-green-600">0</p>
+                        </div>
+                        <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 w-32">
+                            <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Salah</p>
+                            <p id="res-salah" class="text-3xl font-black text-red-600">0</p>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 w-40 transform scale-105 shadow-md">
+                            <p class="text-xs text-blue-600 font-bold uppercase mb-1">Total Nilai</p>
+                            <p id="res-skor" class="text-4xl font-black text-blue-700">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 mb-6">
+                <h3 class="font-black text-xl text-gray-800">Review & Pembahasan Soal</h3>
+                <div class="h-px bg-gray-300 flex-1"></div>
+            </div>
+            
+            <div id="review-container" class="space-y-4">
+                <!-- Pembahasan di-generate via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        /* ========================================================
+           1. PENGATURAN GOOGLE SHEETS
+           Ganti tulisan di dalam tanda kutip dengan URL Web App Anda!
+           ======================================================== */
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRzuS4_cjq29hgkwmvIaJu7UdaJXAyElrbWq_vkW5aXkWIKTMio-nw6wAD1_B8cHyV/exec";
+
+
+        /* ========================================================
+           2. DATABASE 50 SOAL PRAKARYA KELAS 7 (GENAP)
+           ======================================================== */
+        const questions = [
+            // --- KERAJINAN LIMBAH LUNAK ---
+            { q: "Limbah yang bersifat lembut, empuk, dan mudah dibentuk disebut dengan...", o: ["Limbah padat", "Limbah cair", "Limbah lunak", "Limbah gas"], a: 2, r: "Limbah lunak memiliki sifat fisik empuk, lunak, dan sangat mudah untuk dibentuk menjadi kerajinan." },
+            { q: "Berdasarkan sumbernya, limbah lunak dibedakan menjadi dua, yaitu...", o: ["Organik dan Anorganik", "Padat dan Cair", "Domestik dan Industri", "Pertanian dan Pertambangan"], a: 0, r: "Limbah lunak dibagi berdasarkan sumber zatnya yakni organik (alami/mudah terurai) dan anorganik (buatan/sulit terurai)." },
+            { q: "Limbah lunak organik umumnya berasal dari...", o: ["Bahan kimia sintetik", "Tumbuh-tumbuhan dan hewan", "Pecahan kaca dan logam", "Plastik kemasan"], a: 1, r: "Limbah organik mengandung karbon dan berasal dari makhluk hidup (alam)." },
+            { q: "Manakah di bawah ini yang merupakan contoh limbah lunak organik?", o: ["Plastik, karet, dan sterofoam", "Kulit jagung, pelepah pisang, dan jerami", "Kaleng, botol kaca, dan besi", "Kain perca, plastik kemasan, dan karet ban"], a: 1, r: "Kulit jagung, pelepah pisang, dan jerami adalah bahan dari tumbuhan yang lunak dan mudah hancur/terurai." },
+            { q: "Salah satu sifat utama dari limbah lunak organik adalah...", o: ["Sangat sulit membusuk", "Mengandung banyak air dan mudah membusuk", "Tahan terhadap suhu panas tinggi", "Tidak bisa didaur ulang"], a: 1, r: "Bahan alami organik umumnya memiliki kandungan air yang tinggi sehingga rentan membusuk jika tidak dikeringkan." },
+            { q: "Langkah pertama yang paling penting dalam pengolahan bahan limbah lunak organik setelah dikumpulkan adalah...", o: ["Pewarnaan", "Pembuatan desain", "Pengeringan/penjemuran", "Perekatan"], a: 2, r: "Pengeringan di bawah sinar matahari bertujuan menghilangkan kadar air agar limbah tidak cepat membusuk." },
+            { q: "Prinsip pengolahan limbah untuk mengurangi volume sampah disebut dengan...", o: ["Reuse", "Recycle", "Reduce", "Replant"], a: 2, r: "Reduce berarti mengurangi penggunaan barang yang berpotensi menjadi sampah." },
+            { q: "Menggunakan botol plastik bekas sirup sebagai vas bunga merupakan contoh penerapan prinsip...", o: ["Reduce", "Recycle", "Reuse", "Refuse"], a: 2, r: "Reuse adalah menggunakan kembali barang bekas pakai untuk fungsi yang sama atau berbeda tanpa menghancurkan bentuk aslinya." },
+            { q: "Proses melebur sampah plastik menjadi bijih plastik lalu dicetak menjadi ember baru disebut...", o: ["Recycle", "Reuse", "Reduce", "Recovery"], a: 0, r: "Recycle (Daur ulang) memproses ulang bahan baku limbah menjadi produk atau barang baru." },
+            { q: "Bahan pewarna yang cocok digunakan untuk mewarnai limbah kulit jagung agar warnanya cerah dan meresap adalah...", o: ["Cat minyak", "Pewarna makanan atau wantex", "Cat tembok", "Pilox (Cat Semprot)"], a: 1, r: "Pewarna tekstil (wantex) atau makanan direbus bersama air, sangat mudah meresap pada pori-pori kulit jagung." },
+            { q: "Limbah lunak anorganik berasal dari...", o: ["Sisa pertanian", "Kotoran hewan", "Bahan olahan campuran zat kimia sintetis", "Guguran daun"], a: 2, r: "Limbah anorganik buatan pabrik melibatkan pencampuran bahan kimia yang sulit diurai mikroorganisme." },
+            { q: "Contoh limbah lunak anorganik yang sering dijadikan kerajinan tas belanja adalah...", o: ["Pelepah pisang", "Kemasan plastik deterjen (sachet)", "Kulit bawang", "Jerami"], a: 1, r: "Bungkus deterjen dari plastik/aluminium foil (anorganik lunak) sering dianyam atau dijahit menjadi tas." },
+            { q: "Syarat perancangan benda kerajinan yang mengutamakan fungsi atau nilai guna benda tersebut disebut...", o: ["Comfortable (Kenyamanan)", "Utility (Kegunaan)", "Flexibility (Keluwesan)", "Aesthetic (Keindahan)"], a: 1, r: "Utility menitikberatkan agar benda kerajinan dapat digunakan sesuai dengan fungsi praktisnya." },
+            { q: "Sebuah gelas dari bambu dibuat sedemikian rupa agar tidak ada serat tajam yang melukai mulut. Hal ini memenuhi unsur...", o: ["Safety (Keamanan)", "Flexibility", "Aesthetic", "Utility"], a: 0, r: "Safety memastikan benda kerajinan aman digunakan dan tidak membahayakan penggunanya." },
+            { q: "Ciri-ciri limbah kain perca adalah...", o: ["Tebal dan kaku", "Terbuat dari sisa potongan kain penjahit", "Berasal dari hewan", "Mudah meleleh jika dipanaskan"], a: 1, r: "Kain perca adalah sisa-sisa (potongan kecil) kain dari proses penjahitan pakaian." },
+            { q: "Alat utama yang paling sering digunakan untuk merakit kerajinan dari limbah plastik kemasan adalah...", o: ["Gergaji dan palu", "Mesin jahit atau jarum jahit", "Pahat kayu", "Solder"], a: 1, r: "Plastik kemasan biasanya disatukan dengan cara dijahit agar kuat menahan beban." },
+            { q: "Limbah kertas dapat diolah menjadi bahan kerajinan dengan teknik bubur kertas yang sering disebut...", o: ["Paper quilling", "Origami", "Papier mache", "Makrame"], a: 2, r: "Papier mache adalah teknik membuat kerajinan dari bubur kertas yang dicampur lem." },
+            { q: "Di daerah pesisir pantai, limbah organik lunak yang paling banyak ditemukan untuk kerajinan adalah...", o: ["Kulit bawang", "Jerami", "Sabut kelapa dan daun pandan", "Kain perca"], a: 2, r: "Kawasan pantai didominasi oleh tanaman kelapa dan pandan laut." },
+            { q: "Fungsi kemasan pada sebuah produk kerajinan adalah, kecuali...", o: ["Melindungi produk dari kerusakan", "Meningkatkan nilai jual", "Membuat kerajinan cepat rusak", "Memberikan daya tarik visual"], a: 2, r: "Kemasan justru berfungsi untuk mencegah kerusakan produk saat distribusi atau pajangan." },
+            { q: "Kerajinan kotak tisu yang dihiasi dengan susunan gulungan kertas kecil-kecil merupakan penerapan teknik...", o: ["Anyaman", "Paper Quilling", "Lipat", "Batik"], a: 1, r: "Paper quilling adalah seni menggulung kertas kecil memanjang dan menyusunnya menjadi bentuk estetis." },
+            
+            // --- PENGOLAHAN BAHAN PANGAN SAYURAN ---
+            { q: "Sayuran yang dikonsumsi pada bagian daunnya yang lebar disebut sayuran daun. Contohnya adalah...", o: ["Bayam dan kangkung", "Wortel dan lobak", "Buncis dan kacang panjang", "Tomat dan cabai"], a: 0, r: "Bayam dan kangkung dimanfaatkan daunnya sebagai sayuran utama." },
+            { q: "Wortel, lobak, dan kentang termasuk ke dalam klasifikasi sayuran...", o: ["Sayuran buah", "Sayuran umbi/akar", "Sayuran batang", "Sayuran bunga"], a: 1, r: "Bagian yang membesar di dalam tanah dan menyimpan cadangan makanan disebut umbi/akar." },
+            { q: "Brokoli dan kembang kol adalah jenis sayuran yang dimanfaatkan pada bagian...", o: ["Daun", "Akar", "Bunga (Flower vegetables)", "Polong"], a: 2, r: "Brokoli dan kembang kol adalah sekumpulan kuncup bunga yang menebal dan rapat." },
+            { q: "Berikut ini yang termasuk sayuran buah (fruit vegetables) adalah...", o: ["Sawi dan selada", "Tomat, cabai, dan terong", "Asparagus dan rebung", "Bawang merah dan bawang putih"], a: 1, r: "Tomat, cabai, dan terong berkembang dari bunga dan mengandung biji di dalamnya, sehingga diklasifikasikan secara botani sebagai buah." },
+            { q: "Kandungan utama pada wortel yang sangat baik untuk kesehatan mata adalah...", o: ["Vitamin C", "Kalsium", "Vitamin A (Betakaroten)", "Protein"], a: 2, r: "Wortel kaya akan pigmen betakaroten yang diubah tubuh menjadi Vitamin A." },
+            { q: "Sayuran yang memiliki rasa pahit namun sangat berkhasiat menurunkan gula darah dan anti-malaria adalah...", o: ["Bayam", "Pare", "Labu Siam", "Mentimun"], a: 1, r: "Pare memiliki kandungan zat alkaloid (momordisin) yang memberikan rasa pahit sekaligus obat alami." },
+            { q: "Teknik memasak bahan makanan dalam cairan (air, kaldu, susu) yang sudah mendidih dinamakan...", o: ["Boiling", "Steaming", "Frying", "Baking"], a: 0, r: "Boiling (merebus) adalah memasukkan bahan ke dalam air penuh yang suhunya mencapai titik didih (100°C)." },
+            { q: "Teknik mematangkan makanan menggunakan uap air panas yang mendidih di bawahnya (mengukus) disebut...", o: ["Simmering", "Poaching", "Steaming", "Roasting"], a: 2, r: "Steaming (mengukus) menjaga nutrisi sayuran agar tidak terlalu banyak larut ke dalam air rebusan." },
+            { q: "Memasak bahan makanan dengan sedikit minyak goreng dan diaduk secara cepat di atas wajan disebut...", o: ["Deep frying", "Sauteing (Menumis)", "Grilling", "Braising"], a: 1, r: "Menumis (sauteing) menggunakan minyak sedikit dengan api cukup besar dan bahan dipotong kecil-kecil agar cepat matang." },
+            { q: "Bawang merah sering menyebabkan mata perih saat diiris karena mengandung zat...", o: ["Sulfur (Belerang)", "Zat besi", "Kalsium tinggi", "Vitamin D"], a: 0, r: "Bawang merah melepaskan gas propanethial s-oxide (senyawa sulfur) saat selnya terpotong yang mengiritasi kelenjar air mata." },
+            { q: "Metode pengolahan makanan panas kering (Dry Heat Cooking) contohnya adalah...", o: ["Merebus (Boiling)", "Mengukus (Steaming)", "Memanggang (Baking)", "Menyetup (Stewing)"], a: 2, r: "Baking memanggang menggunakan sirkulasi panas udara kering (seperti di oven) tanpa bantuan air." },
+            { q: "Pigmen warna hijau daun pada sayuran seperti bayam dan sawi disebut...", o: ["Karoten", "Antosianin", "Klorofil", "Likopen"], a: 2, r: "Klorofil adalah zat hijau daun yang penting untuk fotosintesis tanaman." },
+            { q: "Tomat berwarna merah cerah karena mengandung senyawa antioksidan tinggi yang disebut...", o: ["Likopen", "Klorofil", "Zat Besi", "Glukosa"], a: 0, r: "Likopen adalah pigmen merah pada tomat yang terbukti sangat kuat menangkal radikal bebas dan kanker." },
+            { q: "Untuk menjaga agar warna sayuran hijau tetap segar saat direbus, sebaiknya...", o: ["Direbus lebih dari 1 jam", "Panci ditutup rapat tanpa dibuka", "Direbus sebentar di air mendidih lalu direndam air es (blanching)", "Diberi cuka yang banyak"], a: 2, r: "Blanching menghentikan proses pematangan seketika dan mengunci warna klorofil." },
+            { q: "Minuman kesehatan yang terbuat dari campuran beberapa sayuran dan buah segar yang dihaluskan disebut...", o: ["Sup", "Jus (Juice)", "Setup", "Kari"], a: 1, r: "Jus mengekstrak cairan buah/sayur menggunakan alat blender/juicer." },
+            { q: "Kemasan tradisional untuk makanan berbahan dasar sayuran yang ramah lingkungan sering menggunakan...", o: ["Sterofoam", "Plastik kresek", "Daun pisang", "Kertas minyak"], a: 2, r: "Daun pisang memberikan aroma khas, aman bersentuhan dengan makanan panas, dan mudah terurai." },
+            { q: "Faktor terpenting dalam menyajikan makanan dan minuman kesehatan adalah...", o: ["Harga yang mahal", "Porsi yang sangat banyak", "Higienitas (Kebersihan)", "Bentuk wadah yang unik"], a: 2, r: "Higienitas memastikan makanan bebas kuman dan aman bagi pencernaan manusia." },
+            
+            // --- PENGOLAHAN HASIL SAMPING SAYURAN ---
+            { q: "Bahan samping atau bagian lain dari tanaman sayuran yang biasanya dibuang namun sebenarnya masih bisa diolah disebut...", o: ["Hasil pangan utama", "Hasil samping sayuran", "Limbah beracun", "Gulma pertanian"], a: 1, r: "Hasil samping adalah by-product, seperti kulit, daun terluar, atau batang yang kaya nutrisi namun jarang dikonsumsi utama." },
+            { q: "Kulit kentang sebaiknya tidak langsung dibuang karena sangat kaya akan kandungan...", o: ["Lemak jenuh", "Vitamin A", "Serat dan Kalium", "Karbohidrat murni"], a: 2, r: "Kulit kentang mengandung serat yang tinggi dan kalium penyeimbang tekanan darah, asalkan dicuci bersih." },
+            { q: "Salah satu contoh olahan dari hasil samping kulit kentang adalah...", o: ["Jus kulit kentang", "Keripik kulit kentang", "Dodol kentang", "Sup bening kulit kentang"], a: 1, r: "Kulit kentang yang dicuci, dibumbui, dan digoreng garing menjadi keripik yang sangat renyah." },
+            { q: "Daun melinjo muda dan kulit buah melinjo yang berwarna merah adalah hasil samping yang sering diolah masakan Nusantara berupa...", o: ["Sayur lodeh atau sayur asem", "Gado-gado", "Sate lilit", "Soto ayam"], a: 0, r: "Kulit melinjo merah memberi tekstur renyah dan daun melinjo (so) melengkapi isian sayur asem/lodeh." },
+            { q: "Batang brokoli sering kali dibuang karena agak keras. Agar bisa dimanfaatkan sebagai tumisan yang lezat, langkah yang tepat adalah...", o: ["Dibuang daunnya saja", "Dikupas kulit terluar batangnya yang tebal lalu dipotong tipis", "Direbus 2 jam", "Digoreng utuh"], a: 1, r: "Bagian dalam batang brokoli sangat manis dan renyah jika kulit luar yang berserat dikupas terlebih dahulu." },
+            { q: "Daun wortel (bagian atas hijau) jarang digunakan di Indonesia, padahal daun ini bisa dimanfaatkan sebagai...", o: ["Pembungkus nasi", "Pewarna merah", "Pengganti seledri pada sup atau bahan pesto", "Bahan bakar"], a: 2, r: "Daun wortel memiliki aroma mirip peterseli/seledri dan kaya vitamin, cocok untuk garnish atau kaldu." },
+            { q: "Pemanfaatan hasil samping sayuran mendukung gaya hidup ramah lingkungan yang dikenal dengan istilah...", o: ["Zero waste (Bebas sampah)", "Fast food", "Junk food", "Go Green Energy"], a: 0, r: "Zero waste dalam dapur berarti memaksimalkan seluruh bagian bahan pangan agar tidak ada yang terbuang jadi sampah." },
+            { q: "Kulit bawang merah sering dimanfaatkan sebagai bahan hasil samping untuk...", o: ["Bahan utama sambal", "Pewarna alami (merah kecoklatan) untuk makanan/telur pindang", "Bahan kerupuk", "Pengawet daging"], a: 1, r: "Kulit bawang menghasilkan warna alami yang cantik untuk masakan tradisional seperti telur pindang." },
+            { q: "Bonggol sawi putih atau pakcoy yang keras bisa didaur ulang dengan cara ditanam kembali di air. Metode ini disebut...", o: ["Grafting", "Regrow (Menanam kembali dari sisa sayur)", "Mencangkok", "Stek daun"], a: 1, r: "Regrow memanfaatkan bonggol sisa sayuran yang diletakkan di air hingga mengeluarkan tunas akar dan daun baru." },
+            { q: "Hasil samping sayuran yang tidak bisa dikonsumsi manusia dapat dimanfaatkan secara optimal sebagai...", o: ["Bahan kerajinan rotan", "Pupuk kompos organik", "Campuran semen", "Pestisida kimia"], a: 1, r: "Sisa sayuran yang membusuk adalah sumber nitrogen dan karbon yang sangat baik untuk pupuk kompos penyubur tanah." },
+            { q: "Mengolah kulit melinjo menjadi oseng-oseng pedas menggunakan teknik memasak...", o: ["Boiling", "Baking", "Sauteing", "Deep frying"], a: 2, r: "Oseng-oseng identik dengan teknik sauteing (menumis) menggunakan sedikit minyak." },
+            { q: "Berikut ini alat yang TIDAK digunakan dalam pengolahan jus sayuran kesehatan adalah...", o: ["Blender", "Pisau", "Talenan", "Solder"], a: 3, r: "Solder adalah alat pemanas elektronik, bukan alat pengolahan makanan." },
+            { q: "Dalam pembuatan produk kerajinan, tahapan memberi hiasan atau warna di akhir agar produk terlihat sempurna disebut...", o: ["Finishing", "Drafting", "Cutting", "Sketching"], a: 0, r: "Finishing adalah penyelesaian akhir produk agar siap pakai atau jual." }
+        ];
+
+        /* ========================================================
+           3. STATE VARIABLES (LOGIKA APLIKASI)
+           ======================================================== */
+        let currentQuestionIdx = 0;
+        let studentAnswers = new Array(50).fill(null);
+        let examStarted = false;
+        let examSubmitted = false;
+        let warnings = 0;
+        let timeLeft = 90 * 60; // 90 Menit
+        let timerInterval;
+
+        /* ========================================================
+           4. FUNGSI-FUNGSI UTAMA
+           ======================================================== */
+
+        // Menampilkan Modal Kustom
+        function showModal(title, message, isFatal = false) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('custom-modal').classList.remove('hidden');
+            
+            if(isFatal) {
+                // Sembunyikan tombol mengerti jika fatal, langsung force submit
+                document.querySelector('#custom-modal button').setAttribute('onclick', 'submitExam(true)');
+                document.querySelector('#custom-modal button').innerText = "Tutup & Submit Otomatis";
+            }
+        }
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        // Mulai Ujian
+        function startExam(e) {
+            e.preventDefault();
+            const nama = document.getElementById('student-name').value.trim();
+            const kelas = document.getElementById('student-class').value;
+            
+            if(!nama || !kelas) return;
+
+            document.getElementById('display-name').innerText = nama;
+            document.getElementById('display-class').innerText = "Kelas: " + kelas;
+
+            // Transisi Layar
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('exam-screen').classList.remove('hidden');
+
+            examStarted = true;
+            initNavGrid();
+            renderQuestion(0);
+            startTimer();
+            activateAntiCheat();
+
+            // Minta full screen (opsional, tangkap promise error jika diblokir iframe/browser)
+            try { 
+                let fsPromise = document.documentElement.requestFullscreen();
+                if (fsPromise && fsPromise.catch) {
+                    fsPromise.catch(err => console.log("Mode fullscreen diblokir oleh browser/iframe."));
+                }
+            } catch(e) {}
+        }
+
+        // Inisialisasi Navigasi Grid
+        function initNavGrid() {
+            const grid = document.getElementById('nav-grid');
+            grid.innerHTML = "";
+            for (let i = 0; i < 50; i++) {
+                const btn = document.createElement('button');
+                btn.id = `nav-btn-${i}`;
+                btn.innerText = i + 1;
+                btn.className = "py-2.5 text-xs font-bold border rounded-lg text-center cursor-pointer transition flex items-center justify-center bg-white text-gray-600 border-gray-200 hover:bg-gray-100";
+                btn.onclick = () => renderQuestion(i);
+                grid.appendChild(btn);
+            }
+        }
+
+        // Render Soal dan Opsi
+        function renderQuestion(idx) {
+            currentQuestionIdx = idx;
+            document.getElementById('current-number').innerText = idx + 1;
+            
+            const qData = questions[idx];
+            document.getElementById('question-text').innerText = qData.q;
+
+            const optionsBox = document.getElementById('options-container');
+            optionsBox.innerHTML = "";
+
+            const labels = ['A', 'B', 'C', 'D'];
+            qData.o.forEach((optText, oIdx) => {
+                const isSelected = studentAnswers[idx] === oIdx;
+                
+                const optBtn = document.createElement('button');
+                optBtn.className = `w-full text-left p-3.5 border-2 rounded-xl text-sm font-medium transition cursor-pointer flex items-start gap-4 mb-2 
+                    ${isSelected ? 'border-blue-500 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'}`;
+                optBtn.onclick = () => selectOption(idx, oIdx);
+                
+                const circle = `<span class="w-7 h-7 shrink-0 flex items-center justify-center rounded-full text-xs font-bold border-2 
+                    ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 text-gray-500'}">${labels[oIdx]}</span>`;
+                
+                optBtn.innerHTML = `${circle} <span class="pt-0.5 leading-relaxed">${optText}</span>`;
+                optionsBox.appendChild(optBtn);
+            });
+
+            updateNavGridColors(idx);
+
+            // Navigasi Bawah
+            document.getElementById('btn-prev').style.visibility = idx === 0 ? 'hidden' : 'visible';
+            
+            if(idx === 49) {
+                document.getElementById('btn-next').classList.add('hidden');
+                document.getElementById('btn-submit').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-next').classList.remove('hidden');
+                document.getElementById('btn-submit').classList.add('hidden');
+            }
+        }
+
+        // Pilih Jawaban
+        function selectOption(qIdx, oIdx) {
+            if(examSubmitted) return;
+            studentAnswers[qIdx] = oIdx;
+            renderQuestion(qIdx);
+            
+            // Auto scroll ke next jika bukan soal terakhir
+            setTimeout(() => {
+                if(qIdx < 49) changeQuestion(1);
+            }, 300);
+        }
+
+        // Update Warna Grid Navigasi
+        function updateNavGridColors(activeIdx) {
+            for(let i=0; i<50; i++) {
+                const btn = document.getElementById(`nav-btn-${i}`);
+                if(i === activeIdx) {
+                    btn.className = "py-2.5 text-xs font-black border-2 rounded-lg text-center cursor-pointer flex items-center justify-center border-blue-600 bg-blue-100 text-blue-800 shadow-sm";
+                } else if(studentAnswers[i] !== null) {
+                    btn.className = "py-2.5 text-xs font-bold border rounded-lg text-center cursor-pointer flex items-center justify-center bg-green-500 text-white border-green-600 shadow-sm";
+                } else {
+                    btn.className = "py-2.5 text-xs font-bold border rounded-lg text-center cursor-pointer flex items-center justify-center bg-white text-gray-600 border-gray-200 hover:bg-gray-100";
+                }
+            }
+        }
+
+        function changeQuestion(step) {
+            let target = currentQuestionIdx + step;
+            if(target >= 0 && target < 50) renderQuestion(target);
+        }
+
+        // Timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    showModal("Waktu Habis!", "Waktu ujian 90 menit telah selesai. Jawaban disubmit otomatis.", true);
+                } else {
+                    timeLeft--;
+                    let m = Math.floor(timeLeft / 60);
+                    let s = timeLeft % 60;
+                    document.getElementById('timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                    
+                    if(timeLeft < 300) { // 5 menit terakhir merah
+                        document.getElementById('timer').classList.add('animate-pulse');
+                    }
+                }
+            }, 1000);
+        }
+
+        // Anti Kecurangan (Tab Blur / Visibility)
+        function activateAntiCheat() {
+            const badge = document.getElementById('warning-badge');
+            const warnCount = document.getElementById('warn-count');
+
+            function triggerWarning() {
+                if (!examStarted || examSubmitted) return;
+                warnings++;
+                warnCount.innerText = warnings;
+                badge.classList.remove('hidden');
+
+                if (warnings >= 3) {
+                    showModal("KECURANGAN FATAL!", "Anda telah keluar layar lebih dari 2 kali. Ujian dibatalkan dan langsung dikumpulkan!", true);
+                } else {
+                    showModal(`PERINGATAN [${warnings}/2]`, `Anda terdeteksi meninggalkan layar ujian atau membuka aplikasi lain! Melanggar 3x ujian otomatis selesai.`);
+                }
+            }
+
+            window.addEventListener('blur', triggerWarning);
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) triggerWarning();
+            });
+        }
+
+        // Konfirmasi Submit Kustom (Mengganti window.confirm)
+        function confirmSubmit() {
+            let belumDiisi = studentAnswers.filter(a => a === null).length;
+            let pesan = "";
+            
+            if(belumDiisi > 0) {
+                pesan = `AWAS! Masih ada ${belumDiisi} soal kosong. Yakin ingin mengumpulkan sekarang?`;
+            } else {
+                pesan = "Apakah Anda yakin sudah selesai dan ingin mengumpulkan ujian?";
+            }
+            
+            document.getElementById('confirm-message').innerText = pesan;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        function executeSubmit() {
+            closeConfirmModal();
+            submitExam();
+        }
+
+        // Proses Submit & Penilaian
+        function submitExam(isForce = false) {
+            if(examSubmitted) return;
+            examSubmitted = true;
+            clearInterval(timerInterval);
+            closeModal();
+
+            // Matikan deteksi kecurangan
+            window.blur = null;
+
+            let benar = 0;
+            let salah = 0;
+
+            questions.forEach((q, index) => {
+                if(studentAnswers[index] === q.a) benar++;
+                else salah++;
+            });
+
+            let skor = benar * 2; // Sesuai instruksi: 1 soal = 2 poin
+
+            // Tampilkan Layar Hasil
+            document.getElementById('res-benar').innerText = benar;
+            document.getElementById('res-salah').innerText = salah;
+            document.getElementById('res-skor').innerText = skor;
+
+            document.getElementById('exam-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            renderReview();
+            sendToSpreadsheet(benar, salah, skor);
+        }
+
+        // Kirim Data ke Google Sheets
+        function sendToSpreadsheet(benar, salah, skor) {
+            const payload = {
+                nama: document.getElementById('student-name').value,
+                kelas: document.getElementById('student-class').value,
+                benar: benar,
+                salah: salah,
+                nilai: skor
+            };
+
+            if(SCRIPT_URL !== "ISI_DENGAN_URL_WEB_APP_GOOGLE_SCRIPT_ANDA") {
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).catch(err => console.log("Lapor panitia, error koneksi: ", err));
+            }
+        }
+
+        // Render Pembahasan
+        function renderReview() {
+            const container = document.getElementById('review-container');
+            container.innerHTML = "";
+            const labels = ['A', 'B', 'C', 'D'];
+
+            questions.forEach((q, idx) => {
+                const sAns = studentAnswers[idx];
+                const isCorrect = sAns === q.a;
+
+                const card = document.createElement('div');
+                card.className = `p-5 rounded-2xl border bg-white shadow-sm relative overflow-hidden ${isCorrect ? 'border-green-200' : 'border-red-200'}`;
+                
+                // Dekorasi pita sisi
+                const ribbon = `<div class="absolute left-0 top-0 bottom-0 w-2 ${isCorrect ? 'bg-green-500' : 'bg-red-500'}"></div>`;
+
+                card.innerHTML = `
+                    ${ribbon}
+                    <div class="pl-3">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-bold text-sm bg-gray-100 px-2 py-1 rounded text-gray-700">Soal No. ${idx + 1}</span>
+                            <span class="text-xs font-bold px-2 py-1 rounded ${isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${isCorrect ? 'BENAR' : 'SALAH'}</span>
+                        </div>
+                        <p class="text-sm font-medium text-gray-800 mb-3">${q.q}</p>
+                        
+                        <div class="space-y-1.5 mb-3 text-xs bg-gray-50 p-3 rounded-lg border">
+                            <p class="${isCorrect ? 'text-green-700 font-bold' : 'text-gray-600'}">
+                                Jawabmu: ${sAns !== null ? labels[sAns] + '. ' + q.o[sAns] : '<i>Kosong</i>'}
+                            </p>
+                            ${!isCorrect ? `
+                            <p class="text-green-700 font-bold border-t pt-1.5 mt-1.5">
+                                Kunci: ${labels[q.a]}. ${q.o[q.a]}
+                            </p>` : ''}
+                        </div>
+                        
+                        <div class="bg-blue-50/50 p-3 rounded-lg border border-blue-100 text-xs">
+                            <p class="text-blue-800 font-bold mb-1 flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Alasan
+                            </p>
+                            <p class="text-gray-700 leading-relaxed">${q.r}</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
